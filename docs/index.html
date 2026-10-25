@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awake — Keep your Mac awake</title>
+<meta name="description" content="Free, tiny Mac menu bar app that keeps your Mac awake, indefinitely or for a set time. Like caffeinate, with a switch.">
+<meta property="og:title" content="Awake — Keep your Mac awake">
+<meta property="og:description" content="One click to stop your Mac from sleeping. Free and open source, for Apple Silicon Macs.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mpalarya.github.io/Awake/">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='%23b45309'/%3E%3Cpath d='M17 26h24v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10z' fill='white'/%3E%3Cpath d='M41 29h3a5 5 0 0 1 0 10h-4' fill='none' stroke='white' stroke-width='4'/%3E%3Cpath d='M14 50h30' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #fcfbf9;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #e8e5e0;
+    --accent: #b45309;
+    --accent-ink: #ffffff;
+    --accent-soft: #fdf1e3;
+    --menu: rgba(246, 244, 241, .92);
+    --menu-hi: #b45309;
+    --code-bg: #f4f2ef;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12100e;
+      --surface: #1b1916;
+      --text: #f5f5f7;
+      --muted: #a8a49f;
+      --line: #2f2b27;
+      --accent: #f2a541;
+      --accent-ink: #12100e;
+      --accent-soft: #2e2418;
+      --menu: rgba(40, 37, 34, .94);
+      --menu-hi: #c86b12;
+      --code-bg: #221f1b;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  nav { display: flex; align-items: center; justify-content: space-between; padding-block: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; color: var(--text); }
+  .brand:hover { text-decoration: none; }
+  .brand svg { width: 28px; height: 28px; }
+  nav .links { display: flex; gap: 22px; font-size: 15px; }
+  nav .links a { color: var(--muted); }
+  nav .links a:hover { color: var(--text); text-decoration: none; }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding-block: 56px 72px; }
+  h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 18px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { font-size: 20px; color: var(--muted); margin: 0 0 30px; max-width: 30em; }
+  .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent); color: var(--accent-ink);
+    font-weight: 600; font-size: 17px; padding: 14px 24px; border-radius: 980px;
+    box-shadow: var(--shadow); transition: transform .15s ease, filter .15s ease;
+  }
+  .btn:hover { text-decoration: none; filter: brightness(1.06); transform: translateY(-1px); }
+  .btn svg { width: 18px; height: 18px; }
+  .meta { font-size: 14px; color: var(--muted); }
+  .meta a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Menu demo */
+  .demo { display: flex; justify-content: center; }
+  .screen {
+    width: 100%; max-width: 400px; border-radius: 18px; overflow: hidden;
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+    background: linear-gradient(160deg, #f6c88f, #c9733a 55%, #7a3b1d);
+  }
+  .menubar {
+    display: flex; justify-content: flex-end; align-items: center; gap: 16px;
+    height: 30px; padding-inline: 14px; font-size: 13px; color: #1d1d1f;
+    background: rgba(255,255,255,.55); backdrop-filter: blur(12px);
+  }
+  .menubar .cup { width: 22px; height: 20px; border-radius: 5px; display: grid; place-items: center; background: rgba(0,0,0,.12); }
+  .menubar svg { width: 16px; height: 16px; }
+  .menu {
+    margin: 6px 14px 64px auto; width: 230px; padding: 5px; border-radius: 10px;
+    background: var(--menu); color: var(--text); font-size: 13.5px; line-height: 1;
+    box-shadow: 0 0 0 .5px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.25); backdrop-filter: blur(20px);
+  }
+  .menu div { padding: 5px 8px 5px 24px; border-radius: 5px; position: relative; }
+  .menu .on::before { content: "✓"; position: absolute; left: 8px; font-weight: 600; }
+  .menu .dim { color: var(--muted); }
+  .menu .hdr { color: var(--muted); font-size: 11.5px; font-weight: 600; padding-left: 8px; }
+  .menu .hi { background: var(--menu-hi); color: #fff; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 8px; }
+  .steam path { animation: steam 2.4s ease-in-out infinite; }
+  .steam path:nth-child(2) { animation-delay: .4s; }
+  @keyframes steam { 0%, 100% { opacity: .25; transform: translateY(1px); } 50% { opacity: 1; transform: translateY(-1px); } }
+
+  /* Sections */
+  section { padding-block: 64px; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 12px; }
+  .sub { color: var(--muted); font-size: 18px; margin: 0 0 36px; max-width: 36em; }
+
+  .uses { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  .card h3 { margin: 12px 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .icon {
+    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .icon svg { width: 22px; height: 22px; }
+
+  ol.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; counter-reset: step; }
+  ol.steps li {
+    counter-increment: step; position: relative;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 22px 24px 22px 76px;
+  }
+  ol.steps li::before {
+    content: counter(step); position: absolute; left: 22px; top: 20px;
+    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700;
+  }
+  ol.steps h3 { margin: 4px 0 6px; font-size: 18px; }
+  ol.steps p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  ol.steps p + p { margin-top: 8px; }
+  kbd, .ui {
+    font: inherit; font-size: .92em; color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; white-space: nowrap;
+  }
+  .note {
+    margin-top: 10px; padding: 12px 14px; border-radius: 12px; font-size: 14.5px;
+    background: var(--accent-soft); color: var(--text);
+  }
+
+  details {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 0 20px; margin-bottom: 12px;
+  }
+  summary {
+    cursor: pointer; list-style: none; padding: 18px 0; font-weight: 600; font-size: 17px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-weight: 400; font-size: 24px; color: var(--muted); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details > div { padding-bottom: 18px; color: var(--muted); font-size: 15.5px; }
+  details > div p { margin: 0 0 10px; }
+
+  .code {
+    position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; margin: 8px 0 16px; overflow-x: auto;
+    font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; color: var(--text); white-space: pre;
+  }
+  .copy {
+    position: absolute; top: 8px; right: 8px; font: 600 12px/1 -apple-system, sans-serif;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .copy:hover { color: var(--text); }
+
+  .req { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .pill { font-size: 14px; color: var(--muted); border: 1px solid var(--line); border-radius: 980px; padding: 6px 14px; background: var(--surface); }
+
+  footer { border-top: 1px solid var(--line); padding-block: 32px 48px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-block: 28px 56px; }
+    .demo { order: -1; }
+    nav .links a:not(.gh) { display: none; }
+    ol.steps li { padding: 70px 20px 20px; }
+    ol.steps li::before { top: 20px; left: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .steam path { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <nav>
+    <a class="brand" href="#">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="#b45309"/><path d="M17 26h24v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10z" fill="#fff"/><path d="M41 29h3a5 5 0 0 1 0 10h-4" fill="none" stroke="#fff" stroke-width="4"/><path d="M14 50h30" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+      Awake
+    </a>
+    <div class="links">
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/MPalarya/Awake">GitHub</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div>
+      <h1>Your Mac stays <em>awake</em> until you say so.</h1>
+      <p class="lede">One click in the menu bar stops your Mac and its display from sleeping. Keep it on indefinitely or for a set time, then forget about it.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/MPalarya/Awake/releases/latest/download/Awake.dmg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          Download for Mac
+        </a>
+        <span class="meta"><span id="version">Free</span> · Apple Silicon · macOS 15+</span>
+      </div>
+    </div>
+    <div class="demo" aria-hidden="true">
+      <div class="screen">
+        <div class="menubar">
+          <span class="cup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g class="steam"><path d="M9 3c-1 1.2 1 2 0 3.5"/><path d="M13 3c-1 1.2 1 2 0 3.5"/></g><path d="M4 10h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z" fill="currentColor"/><path d="M17 11.5h1.5a2.5 2.5 0 0 1 0 5H17"/></svg></span>
+          <span>Sat 14:05</span>
+        </div>
+        <div class="menu">
+          <div class="on">Keep Awake</div>
+          <div class="dim">Until 15:05</div>
+          <hr>
+          <div class="hdr">Duration</div>
+          <div>Indefinitely</div>
+          <div>30 Minutes</div>
+          <div class="on hi">1 Hour</div>
+          <div>2 Hours</div>
+          <div>8 Hours</div>
+          <hr>
+          <div>Launch at Login</div>
+          <div>Quit Awake</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>One switch. No fuss.</h2>
+      <p class="sub">Awake lives quietly in your menu bar. It has no windows, needs no permissions and has no account to create.</p>
+      <div class="uses">
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <h3>Screen stays on</h3>
+          <p>Presentations, dashboards, recipes and long reads: the display never dims while Awake is on.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></div>
+          <h3>Jobs keep running</h3>
+          <p>Downloads, backups, builds and remote sessions finish without your Mac nodding off halfway.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M10 2h4"/></svg></div>
+          <h3>Set a timer</h3>
+          <p>Stay awake indefinitely, or pick 15 minutes up to 8 hours and Awake switches itself off.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+          <h3>Zero overhead</h3>
+          <p>It uses the same mechanism as Apple's <code>caffeinate</code> command and uses no CPU while it runs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install in about a minute.</h2>
+      <p class="sub">Awake is free and not sold through the App Store, so macOS asks you to confirm it once the first time.</p>
+      <ol class="steps">
+        <li>
+          <h3>Download and drag to Applications</h3>
+          <p><a href="https://github.com/MPalarya/Awake/releases/latest/download/Awake.dmg">Download Awake.dmg</a>, open it, and drag the <b>Awake</b> icon onto the <b>Applications</b> folder.</p>
+        </li>
+        <li>
+          <h3>Open it for the first time</h3>
+          <p>Open Awake from your Applications folder. macOS will warn you that it can't verify the developer. This is normal for free apps distributed outside the App Store.</p>
+          <p>Click <span class="ui">Done</span>, then open <span class="ui">System Settings → Privacy &amp; Security</span>, scroll down and click <span class="ui">Open Anyway</span>.</p>
+        </li>
+        <li>
+          <h3>Click the cup</h3>
+          <p>Look for the <b>cup icon</b> in your menu bar near the clock. Choose <span class="ui">Keep Awake</span> to turn it on, or pick a duration. A filled cup means your Mac is staying awake.</p>
+        </li>
+      </ol>
+
+      <div class="req">
+        <span class="pill">Apple Silicon Mac (M1 or newer)</span>
+        <span class="pill">macOS 15 Sequoia or newer</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Questions</h2>
+      <p class="sub">The short answers.</p>
+
+      <details>
+        <summary>Is it really free?</summary>
+        <div><p>Yes. Awake is free and open source under the MIT license. There are no ads, accounts or in-app purchases.</p></div>
+      </details>
+      <details>
+        <summary>Is it safe?</summary>
+        <div>
+          <p>The full source code is public on <a href="https://github.com/MPalarya/Awake">GitHub</a>, and every download is built automatically from that code. The app never connects to the internet, asks for no permissions and collects no data.</p>
+          <p>macOS shows a warning only because the app isn't registered with Apple's paid developer program.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Does it keep my MacBook awake with the lid closed?</summary>
+        <div><p>Only when it's plugged into power and an external display, which is the standard clamshell mode. On battery, closing the lid always puts a Mac to sleep. That's a macOS rule that <code>caffeinate</code> follows too.</p></div>
+      </details>
+      <details>
+        <summary>Will it drain my battery?</summary>
+        <div><p>Awake itself uses no CPU while it runs. Your Mac uses more power simply because the screen stays on and it doesn't sleep. Use a timer if you only need a little while.</p></div>
+      </details>
+      <details>
+        <summary>Can it turn on automatically?</summary>
+        <div><p>Yes. Turn on <span class="ui">Launch at Login</span>. If Awake was on with <span class="ui">Indefinitely</span> when you quit or shut down, it turns itself back on the next time it starts.</p></div>
+      </details>
+      <details>
+        <summary>How do I uninstall it?</summary>
+        <div><p>Click the cup icon in the menu bar, choose <span class="ui">Quit Awake</span>, then drag Awake from Applications to the Trash.</p></div>
+      </details>
+      <details>
+        <summary>I'm a developer. Can I install it from Terminal?</summary>
+        <div>
+          <p>With Homebrew:</p>
+          <div class="code"><button class="copy" type="button">Copy</button>brew tap mpalarya/awake https://github.com/MPalarya/Awake
+brew trust mpalarya/awake
+brew install --cask awake</div>
+          <p>Or with curl:</p>
+          <div class="code"><button class="copy" type="button">Copy</button>curl -fsSL https://raw.githubusercontent.com/MPalarya/Awake/main/install.sh | bash</div>
+          <p>Both methods skip the "unverified developer" warning. See the <a href="https://github.com/MPalarya/Awake#readme">README</a> for details and build instructions.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Awake is free and open source (MIT).</span>
+    <span><a href="https://github.com/MPalarya/Awake">Source code</a> · <a href="https://github.com/MPalarya/Awake/releases">All releases</a> · <a href="https://github.com/MPalarya/Awake/issues">Report a problem</a></span>
+  </div>
+</footer>
+
+<script>
+  // Show the latest version next to the download button.
+  fetch("https://api.github.com/repos/MPalarya/Awake/releases/latest")
+    .then(r => r.ok ? r.json() : null)
+    .then(r => { if (r && r.tag_name) document.getElementById("version").textContent = "Free · " + r.tag_name; })
+    .catch(() => {});
+
+  document.querySelectorAll(".copy").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const text = btn.parentElement.textContent.replace(btn.textContent, "").trim();
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = "Copy"), 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>

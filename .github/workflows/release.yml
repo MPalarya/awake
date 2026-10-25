@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15 # Apple Silicon runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Awake.app (arm64)
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: scripts/build_app.sh
+
+      - name: Package Awake.dmg
+        run: scripts/make_dmg.sh
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/Awake.dmg \
+            --title "Awake $GITHUB_REF_NAME" \
+            --generate-notes \
+          || gh release upload "$GITHUB_REF_NAME" build/Awake.dmg --clobber
+
+      - name: Bump Homebrew cask
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA="$(shasum -a 256 build/Awake.dmg | cut -d' ' -f1)"
+          git fetch --depth=1 origin main
+          git checkout -B main origin/main
+          sed -i '' -E \
+            -e "s/^  version \".*\"/  version \"$VERSION\"/" \
+            -e "s/^  sha256 \".*\"/  sha256 \"$SHA\"/" \
+            Casks/awake.rb
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Bump cask to $VERSION"
+          git push origin main
