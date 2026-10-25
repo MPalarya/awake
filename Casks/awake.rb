@@ -1,6 +1,6 @@
 cask "awake" do
   version "0.1.0"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  sha256 "9317af87719faf5857dc20eaa8692832189f2d383f2013c538525d690caa1c8d"
 
   url "https://github.com/MPalarya/Awake/releases/download/v#{version}/Awake.dmg"
   name "Awake"
